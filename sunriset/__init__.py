@@ -7,31 +7,34 @@ Note: For individual, detailed calculations, run help(sunriset.calc).
 """
 
 import datetime
-from datetime import timedelta
+from datetime import datetime, timezone, timedelta
 
 import pandas as pd
 
 from . import calc
 
 
-def to_pandas(start_date, lat, long, local_tz, number_of_years):
+def to_pandas(
+        start_date: datetime.date,
+        end_date: datetime.date,
+        lat: float,
+        long: float,
+        local_tz: float = 0,
+        full: bool = False,
+        round: bool = True) -> pd.DataFrame:
     """Returns a Pandas DataFrame of all the calculations for various solar projects.
     With a datetime.date for starting date, local latitude, lat, local Longitude, long
     and local Time Zone as a positive or negative integer."""
 
-    # this will evelntially be the daylight savings output:
+    # this will eventually be the daylight savings output:
     tz_adjust = 0
-    year = int(start_date.year)
-    # Number of days claculation
-    total_days = sum(
-        366 if year % 4 == 0 and year % 100 != 0 or year % 400 == 0 else 365
-        for _y in range(1, number_of_years + 1)
-    )
 
     dict_for_df = {}
-    for i in range(total_days):
+    if end_date < start_date:
+        raise ValueError(f'end_date {end_date} must be after start_date {start_date}')
+    for i in range((end_date - start_date).days + 1):
         # Our arguments are passed as positional maybe not best practice?
-        yr = start_date + datetime.timedelta(days=i)
+        yr = start_date + timedelta(days=i)
         julian_day = calc.julian_day(yr, local_tz)
         julian_cent = calc.julian_century(julian_day)
         sgml = calc.solar_geometric_mean_longitude(julian_cent)
@@ -96,7 +99,7 @@ def to_pandas(start_date, lat, long, local_tz, number_of_years):
             atmr,
             azmt,
         ]
-    return pd.DataFrame.from_dict(
+    df = pd.DataFrame.from_dict(
         dict_for_df,
         orient="index",
         columns=[
@@ -131,8 +134,23 @@ def to_pandas(start_date, lat, long, local_tz, number_of_years):
             "Approximate Atmospheric Refraction (degrees)",
             "Solar Elevation Corrected ATM Refraction (degrees)",
             "Solar Azimuth Angle (degrees cw from North)",
-        ],
+        ]
     )
+    if not full:
+        df.reset_index(inplace=True, names='date')
+        df['sunrise'] = df.date.apply(
+            lambda x: datetime(year=x.year, month=x.month, day=x.day, tzinfo=timezone.utc)
+        ) + df.Sunrise
+        df['sunset'] = df.date.apply(
+            lambda x: datetime(year=x.year, month=x.month, day=x.day, tzinfo=timezone.utc)
+        ) + df.Sunset
+        df = df[['date', 'sunrise', 'sunset']].copy()
+
+    if round:
+        df.sunrise = df.sunrise.dt.floor('min')
+        df.sunset = df.sunset.dt.floor('min')
+
+    return df
 
 
 def to_dict(start_date, lat, long, local_tz, number_of_years):
@@ -152,7 +170,7 @@ def to_dict(start_date, lat, long, local_tz, number_of_years):
     dict_for_df = {}
     for i in range(total_days):
         # Our arguments are passed as positional maybe not best practice?
-        yr = start_date + datetime.timedelta(days=i)
+        yr = start_date + timedelta(days=i)
         julian_day = calc.julian_day(yr, local_tz)
         julian_cent = calc.julian_century(julian_day)
         sgml = calc.solar_geometric_mean_longitude(julian_cent)

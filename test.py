@@ -3,22 +3,33 @@
 import datetime
 import unittest
 
+import pandas as pd
+
 import sunriset
 import sunriset.calc
 
 class TestSunriset(unittest.TestCase):
     def test_to_pandas(self):
         """Test conversion to the pandas data frame."""
-        lat = 34.0522
-        long = -118.2437
-        local_tz = -8
+        lat = 30.265025
+        long = -85.520041
+        local_tz = 0
 
-        number_of_years = 1
-        start_date = datetime.date(2019, 1, 1)
+        start_date = datetime.date(2024, 2, 22)
+        end_date = start_date
 
-        df = sunriset.to_pandas(start_date, lat, long, local_tz, number_of_years)
+        df = sunriset.to_pandas(start_date, end_date, lat, long, local_tz)
 
-        self.assertEqual(len(df.index), 365)
+        df2 = pd.DataFrame({
+            'date': [start_date],
+            'sunrise': datetime.datetime.fromisoformat('2024-02-22T12:15:00+00:00'),
+            'sunset': datetime.datetime.fromisoformat('2024-02-22T23:35:00+00:00')
+        })
+
+        pd.testing.assert_frame_equal(
+            df, df2.astype({'sunrise': 'datetime64[ns, UTC]', 'sunset': 'datetime64[ns, UTC]'})
+        )
+        self.assertEqual(len(df.index), 1)
 
     def test_set_noon(self):
         lat = 34.0522
