@@ -14,17 +14,17 @@ import pandas as pd
 from . import calc
 
 
-def to_pandas(
+def to_pandas_utc(
         start_date: datetime.date,
         end_date: datetime.date,
         lat: float,
         long: float,
-        local_tz: float = 0,
         full: bool = False,
         round: bool = True) -> pd.DataFrame:
     """Returns a Pandas DataFrame of all the calculations for various solar projects.
-    With a datetime.date for starting date, local latitude, lat, local Longitude, long
-    and local Time Zone as a positive or negative integer."""
+    With a datetime.date for starting date, local latitude, lat, local Longitude, long."""
+
+    local_tz: float = 0
 
     # this will eventually be the daylight savings output:
     tz_adjust = 0

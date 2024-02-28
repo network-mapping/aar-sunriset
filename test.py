@@ -18,7 +18,7 @@ class TestSunriset(unittest.TestCase):
         start_date = datetime.date(2024, 2, 22)
         end_date = start_date
 
-        df = sunriset.to_pandas(start_date, end_date, lat, long, local_tz)
+        df = sunriset.to_pandas_utc(start_date, end_date, lat, long, local_tz)
 
         df2 = pd.DataFrame({
             'date': [start_date],
